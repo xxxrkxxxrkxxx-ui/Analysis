@@ -374,7 +374,7 @@
 
             uploadButton.addEventListener('click', () => {
                 passwordModalTitle.textContent = "ACCESS REQUIRED";
-                passwordModalSubtitle.textContent = "Enter access";
+                passwordModalSubtitle.textContent = "Enter access code to upload file.";
                 actionToConfirm = { type: 'upload' };
                 showModal(passwordModal);
             });
@@ -395,10 +395,14 @@
                     await deleteReport(actionToConfirm.id);
                     hideModals();
                 } else if (actionToConfirm.type === 'edit') {
-                    hideModals();
+                    // Correctly transition between modals without resetting state
+                    passwordModal.classList.add('hidden'); // Hide current modal
+                    passwordInput.value = '';
+                    passwordError.textContent = '';
+                    
                     reportNameModalTitle.textContent = "EDIT REPORT NAME";
                     reportNameInput.value = actionToConfirm.name;
-                    showModal(reportNameModal);
+                    reportNameModal.classList.remove('hidden'); // Show next modal
                 }
             });
 
@@ -686,5 +690,4 @@
     </script>
 </body>
 </html>
-
 
