@@ -13,7 +13,7 @@
             font-weight: bold;
             background-color: #000000;
             color: #e5e7eb;
-            overflow: hidden; /* Prevent scrolling during load */
+            overflow-x: hidden; /* Prevent horizontal scroll, allow vertical */
         }
         .tooltip {
             position: absolute;
@@ -28,6 +28,7 @@
             transition: opacity 0.3s;
             box-shadow: 0 10px 15px -3px rgba(0,0,0,0.4), 0 4px 6px -2px rgba(0,0,0,0.2);
             min-width: 220px;
+            z-index: 30;
         }
         .axis-label {
             font-size: 14px;
@@ -51,8 +52,6 @@
              backdrop-filter: blur(4px);
              border: 1px solid rgba(130, 255, 130, 0.3);
         }
-
-        /* --- Loader Styles --- */
         #loader {
             position: fixed;
             top: 0;
@@ -102,11 +101,49 @@
             }
             20%, 24%, 55% { text-shadow: none; }
         }
-        #app-container.hidden { display: none; }
-
+        #app-wrapper.hidden { display: none; }
+        .report-item.active {
+            background-color: rgba(163, 230, 53, 0.2);
+            border-left-color: #a3e635;
+        }
+        
+        .btn {
+            padding: 0.5rem 1rem;
+            font-weight: bold;
+            border-radius: 0.5rem;
+            transition: all 0.2s ease-in-out;
+            border: 1px solid #4b5563; /* gray-600 */
+        }
+        .btn-primary {
+            background-color: white;
+            color: black;
+            border-color: white;
+        }
+        .btn-primary:hover {
+            background-color: black;
+            color: white;
+            border-color: white;
+        }
+        .btn-secondary {
+            background-color: #374151; /* gray-700 */
+            color: white;
+            border-color: #4b5563; /* gray-600 */
+        }
+        .btn-secondary:hover {
+            background-color: black;
+            color: white;
+            border-color: white;
+        }
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            background-color: #374151;
+            border-color: #4b5563;
+            color: #9ca3af;
+        }
     </style>
 </head>
-<body class="p-4 sm:p-6 md:p-8">
+<body class="h-screen">
 
     <!-- Hacker Loader -->
     <div id="loader">
@@ -117,68 +154,94 @@
         </div>
     </div>
     
-    <!-- Access Code Modal -->
-    <div id="password-modal" class="hidden fixed inset-0 bg-black bg-opacity-80 z-50 flex items-center justify-center">
-        <div class="panel p-6 rounded-lg text-center">
+    <!-- Modal Dialogs -->
+    <div id="modal-backdrop" class="hidden fixed inset-0 bg-black bg-opacity-80 z-50 flex items-center justify-center">
+        <!-- Access Code Modal -->
+        <div id="password-modal" class="hidden panel p-6 rounded-lg text-center w-80">
             <h3 class="text-lg text-lime-400 mb-4">ACCESS REQUIRED</h3>
             <p class="text-gray-300 mb-4">Enter access code to upload file.</p>
-            <input type="password" id="password-input" class="bg-gray-900 text-center text-lime-400 font-bold tracking-widest p-2 rounded border border-gray-600 focus:outline-none focus:ring-2 focus:ring-lime-400">
+            <input type="password" id="password-input" class="bg-gray-900 text-center text-lime-400 font-bold tracking-widest p-2 rounded border border-gray-600 focus:outline-none focus:ring-2 focus:ring-lime-400 w-full">
             <p id="password-error" class="text-red-500 text-xs mt-2 h-4"></p>
-            <button id="password-submit" class="mt-4 bg-lime-400 text-black font-bold py-2 px-6 rounded-lg hover:bg-lime-300">SUBMIT</button>
+            <button id="password-submit" class="btn btn-primary w-full mt-4">SUBMIT</button>
         </div>
-    </div>
-
-    <div id="app-container" class="hidden max-w-7xl mx-auto bg-black rounded-xl p-6 border border-gray-800">
-        <div class="flex justify-between items-start mb-2 border-b border-gray-700/50 pb-4">
-            <div>
-                <h1 class="text-xl sm:text-2xl text-lime-400 tracking-wider">CALL-OFF ANALYSIS</h1>
-                <p class="text-[10px] text-lime-400/80 [text-shadow:0_0_8px_rgba(163,230,53,0.8)]">GRIDVECTOR DATA VISUALIZATION</p>
-            </div>
-            <div>
-                <button id="share-button" class="bg-gray-800 text-gray-200 font-bold py-2 px-4 rounded-lg border border-gray-600 hover:border-lime-400 hover:text-white transition-colors duration-300">Share Report</button>
-                <span id="share-feedback" class="ml-4 text-emerald-400 opacity-0">Link Copied!</span>
-            </div>
-        </div>
-        
-        <div class="my-6 flex items-center space-x-4 p-3 panel rounded-lg">
-             <button id="upload-button" class="bg-lime-400 text-black font-bold py-2 px-4 rounded-lg hover:bg-lime-300">UPLOAD NEW CSV</button>
-             <input type="file" id="csv-file-input" accept=".csv" class="hidden">
-        </div>
-
-
-        <div id="visualization-container" class="grid grid-cols-1 lg:grid-cols-4 gap-6">
-            
-            <div id="chart" class="lg:col-span-3 w-full panel p-4 rounded-lg"></div>
-
-            <div id="legend-container" class="lg:col-span-1 panel p-4 rounded-lg">
-                <h3 class="text-base text-lime-400 tracking-wider mb-3 border-b border-gray-700/50 pb-2">LEGEND</h3>
-                
-                <div class="mb-6">
-                    <h4 class="font-bold text-sm text-gray-300 mb-2">CALL-OFF TYPE</h4>
-                    <div class="flex items-center mb-2">
-                        <div class="w-4 h-4 rounded-sm bg-white mr-3"></div>
-                        <span class="text-sm text-gray-300">Excused</span>
-                    </div>
-                    <div class="flex items-center">
-                        <div class="w-4 h-4 rounded-sm bg-gray-600 mr-3"></div>
-                        <span class="text-sm text-gray-300">Unexcused</span>
-                    </div>
-                </div>
-
-                <div class="mb-6">
-                    <h4 class="font-bold text-sm text-gray-300 mb-2">SUPERVISOR</h4>
-                    <div id="supervisor-legend" class="space-y-2"></div>
-                </div>
+        <!-- Save Report Modal -->
+        <div id="save-report-modal" class="hidden panel p-6 rounded-lg text-center w-80">
+            <h3 class="text-lg text-lime-400 mb-4">SAVE REPORT</h3>
+            <p class="text-gray-300 mb-4">Enter a name for this report.</p>
+            <input type="text" id="report-name-input" placeholder="e.g., Q3 Call-Offs" class="bg-gray-900 text-center text-lime-400 font-bold p-2 rounded border border-gray-600 focus:outline-none focus:ring-2 focus:ring-lime-400 w-full">
+            <p id="save-error" class="text-red-500 text-xs mt-2 h-4"></p>
+            <div class="flex gap-4 mt-4">
+                <button id="save-cancel" class="btn btn-secondary flex-1">CANCEL</button>
+                <button id="save-confirm" class="btn btn-primary flex-1">SAVE</button>
             </div>
         </div>
     </div>
     
+    <!-- Past Reports View -->
+    <div id="past-reports-view" class="hidden fixed inset-0 bg-black bg-opacity-95 z-40 p-4 sm:p-6 md:p-8 flex flex-col">
+        <div class="flex justify-between items-center mb-4 border-b border-gray-700/50 pb-4 flex-shrink-0">
+            <h2 class="text-xl sm:text-2xl text-lime-400">PAST REPORTS</h2>
+            <button id="back-to-main-view-btn" class="btn btn-primary">Back to Report</button>
+        </div>
+        <div id="reports-list-container" class="flex-grow overflow-y-auto space-y-2 pr-2">
+            <!-- List will be populated here -->
+        </div>
+    </div>
+
+    <div id="app-wrapper" class="hidden h-full flex flex-col p-4 sm:p-6 md:p-8">
+        <div class="flex justify-between items-center mb-4 border-b border-gray-700/50 pb-4 flex-shrink-0">
+            <div>
+                <h1 class="text-xl sm:text-2xl text-lime-400 tracking-wider">CALL-OFF ANALYSIS</h1>
+                <p class="text-[10px] text-lime-400/80 [text-shadow:0_0_8px_rgba(163,230,53,0.8)]">GRIDVECTOR DATA VISUALIZATION</p>
+            </div>
+        </div>
+
+        <div id="main-content-panel" class="flex-grow flex flex-col gap-6 min-h-0">
+            <div class="panel p-3 rounded-lg flex flex-wrap items-center justify-between gap-4 flex-shrink-0">
+                <div class="flex items-center gap-4">
+                     <button id="upload-button" class="btn btn-primary">UPLOAD NEW CSV</button>
+                     <input type="file" id="csv-file-input" accept=".csv" class="hidden">
+                     <button id="show-past-reports-btn" class="btn btn-secondary">See Past Reports</button>
+                     <button id="save-report-button" class="hidden btn btn-primary">Save Current Report</button>
+                </div>
+                 <div>
+                    <button id="share-button" class="btn btn-secondary" disabled>Share Report</button>
+                    <span id="share-feedback" class="ml-4 text-emerald-400 opacity-0">Link Copied!</span>
+                </div>
+            </div>
+
+            <div id="visualization-container" class="grid grid-cols-1 xl:grid-cols-4 gap-6 flex-grow min-h-0">
+                <div id="chart-container" class="xl:col-span-3 w-full panel p-4 rounded-lg overflow-y-auto">
+                    <div id="chart-placeholder" class="h-full flex items-center justify-center text-gray-500">
+                       <p>Upload a new report or select one from the list.</p>
+                    </div>
+                    <div id="chart"></div>
+                </div>
+                <div id="legend-container" class="xl:col-span-1 panel p-4 rounded-lg overflow-y-auto">
+                    <h3 class="text-base text-lime-400 tracking-wider mb-3 border-b border-gray-700/50 pb-2">LEGEND</h3>
+                    <div id="legend-content" class="hidden">
+                        <div class="mb-6">
+                            <h4 class="font-bold text-sm text-gray-300 mb-2">CALL-OFF TYPE</h4>
+                            <div class="flex items-center mb-2"><div class="w-4 h-4 rounded-sm bg-white mr-3"></div><span class="text-sm text-gray-300">Excused</span></div>
+                            <div class="flex items-center"><div class="w-4 h-4 rounded-sm bg-gray-600 mr-3"></div><span class="text-sm text-gray-300">Unexcused</span></div>
+                        </div>
+                        <div class="mb-6"><h4 class="font-bold text-sm text-gray-300 mb-2">SUPERVISOR</h4><div id="supervisor-legend" class="space-y-2"></div></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
     <div id="tooltip" class="tooltip"></div>
 
-    <script>
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, addDoc, onSnapshot, query, doc, getDoc, serverTimestamp, setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
         document.addEventListener('DOMContentLoaded', () => {
+            // --- Loader Animation ---
             const loader = document.getElementById('loader');
-            const appContainer = document.getElementById('app-container');
+            const appWrapper = document.getElementById('app-wrapper');
             const canvas = document.getElementById('matrix-canvas');
             const ctx = canvas.getContext('2d');
 
@@ -190,9 +253,7 @@
             const columns = canvas.width / fontSize;
             const rainDrops = [];
 
-            for (let x = 0; x < columns; x++) {
-                rainDrops[x] = 1;
-            }
+            for (let x = 0; x < columns; x++) { rainDrops[x] = 1; }
 
             const drawMatrix = () => {
                 ctx.fillStyle = 'rgba(0, 0, 0, 0.05)';
@@ -203,9 +264,7 @@
                 for (let i = 0; i < rainDrops.length; i++) {
                     const text = alphabet.charAt(Math.floor(Math.random() * alphabet.length));
                     ctx.fillText(text, i * fontSize, rainDrops[i] * fontSize);
-                    if (rainDrops[i] * fontSize > canvas.height && Math.random() > 0.975) {
-                        rainDrops[i] = 0;
-                    }
+                    if (rainDrops[i] * fontSize > canvas.height && Math.random() > 0.975) { rainDrops[i] = 0; }
                     rainDrops[i]++;
                 }
             };
@@ -216,144 +275,163 @@
                 loader.classList.add('fade-out');
                 loader.addEventListener('transitionend', () => {
                     loader.style.display = 'none';
-                    appContainer.classList.remove('hidden');
-                    document.body.style.overflow = '';
+                    appWrapper.classList.remove('hidden');
+                    document.body.style.overflow = 'auto'; // Restore scrolling
                     initializeChartApp();
                     clearInterval(matrixInterval);
                 }, { once: true });
             }, 2500);
         });
 
-        function initializeChartApp() {
+        async function initializeChartApp() {
+            // --- Firebase Setup ---
+            const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+            const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : null;
+            
+            if (!firebaseConfig) {
+                document.getElementById('chart-placeholder').innerHTML = '<p class="text-red-500">Firebase configuration is missing. App cannot function.</p>';
+                return;
+            }
+
+            const app = initializeApp(firebaseConfig);
+            const auth = getAuth(app);
+            const db = getFirestore(app);
+            setLogLevel('debug');
+
+            try {
+                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                    await signInWithCustomToken(auth, __initial_auth_token);
+                } else {
+                    await signInAnonymously(auth);
+                }
+            } catch(e) { console.error("Firebase auth error:", e); }
+
+            const reportsCollection = collection(db, `/artifacts/${appId}/public/data/reports`);
+
+            // --- DOM Elements ---
             const fileInput = document.getElementById('csv-file-input');
             const shareButton = document.getElementById('share-button');
             const shareFeedback = document.getElementById('share-feedback');
             const uploadButton = document.getElementById('upload-button');
+            const saveReportButton = document.getElementById('save-report-button');
+            const modalBackdrop = document.getElementById('modal-backdrop');
             const passwordModal = document.getElementById('password-modal');
             const passwordInput = document.getElementById('password-input');
             const passwordSubmit = document.getElementById('password-submit');
             const passwordError = document.getElementById('password-error');
+            const saveReportModal = document.getElementById('save-report-modal');
+            const reportNameInput = document.getElementById('report-name-input');
+            const saveConfirm = document.getElementById('save-confirm');
+            const saveCancel = document.getElementById('save-cancel');
+            const saveError = document.getElementById('save-error');
+            const reportsListContainer = document.getElementById('reports-list-container');
+            const chartPlaceholder = document.getElementById('chart-placeholder');
+            const legendContent = document.getElementById('legend-content');
+            const pastReportsView = document.getElementById('past-reports-view');
+            const showPastReportsBtn = document.getElementById('show-past-reports-btn');
+            const backToMainViewBtn = document.getElementById('back-to-main-view-btn');
 
-            const initialCsvData = `FirstName,LastName,Excused,Supervisor
-Aireyn,Taylor-Hunter,1,Jason Daugherty
-Itishia,Hunt,0,Jason Daugherty
-Aireyn,Taylor-Hunter,0,Jason Daugherty
-Aireyn,Taylor-Hunter,1,Jason Daugherty
-David,Peraza,1,Mohammed Ezzat
-Nessrine,Kasmi,1,Aldo Diaz
-Nessrine,Kasmi,1,Aldo Diaz
-Nessrine,Kasmi,1,Aldo Diaz
-Nessrine,Kasmi,1,Aldo Diaz
-Ruth,Dock,1,Jason Daugherty
-Rommel,Perez,1,Aldo Diaz
-Enkhzaya,Oldokh,0,Jason Daugherty
-Maryann,Fillari,1,Aldo Diaz
-Wossenu,Adesse,1,Jason Daugherty
-Serinia,Brown,1,Douglas Fletcher
-Delon,Johnson,1,Inderprit Gill
-Ashanti,Griffin,1,Inderprit Gill
-Dominic,Thorn,1,Inderprit Gill
-Michael,Gorman,0,Julio Daldon
-Maryann,Fillari,1,Aldo Diaz
-Jeffrey,Hughley,1,Aldo Diaz
-Marcus,Lewis,1,Mohammed Ezzat
-Issack,Jones,0,Aldo Diaz
-Adrian,Gutter,0,Aldo Diaz
-Latisha,White,1,Aldo Diaz
-Lorenzo,Hudson,0,Mohammed Ezzat
-Rommel,Calvert,1,Jason Daugherty
-Faisal,Alnumi,1,Jason Daugherty
-Bishnu,Wagle,1,Jason Daugherty
-Liliana,Prieto,1,Jason Daugherty
-Itishia,Hunt,0,Jason Daugherty
-Aireyn,Taylor-Hunter,0,Jason Daugherty
-Aireyn,Taylor-Hunter,1,Jason Daugherty
-David,Peraza,1,Mohammed Ezzat
-Nessrine,Kasmi,1,Aldo Diaz
-Nessrine,Kasmi,1,Aldo Diaz
-Nessrine,Kasmi,1,Aldo Diaz
-Nessrine,Kasmi,1,Aldo Diaz
-Ruth,Dock,1,Jason Daugherty
-Rommel,Perez,1,Aldo Diaz
-Enkhzaya,Oldokh,0,Jason Daugherty
-Maryann,Fillari,1,Aldo Diaz
-Wossenu,Adesse,1,Jason Daugherty
-Serinia,Brown,1,Douglas Fletcher
-Delon,Johnson,1,Inderprit Gill
-Ashanti,Griffin,1,Inderprit Gill
-Dominic,Thorn,1,Inderprit Gill
-Michael,Gorman,0,Julio Daldon
-Maryann,Fillari,1,Aldo Diaz
-Jeffrey,Hughley,1,Aldo Diaz
-Marcus,Lewis,1,Mohammed Ezzat
-Issack,Jones,0,Aldo Diaz
-Adrian,Gutter,0,Aldo Diaz
-Latisha,White,1,Aldo Diaz
-Lorenzo,Hudson,0,Mohammed Ezzat
-Rommel,Calvert,1,Jason Daugherty
-Faisal,Alnumi,1,Jason Daugherty
-Bishnu,Wagle,1,Jason Daugherty`;
+            // --- App State ---
+            let currentCsvData = null;
+            let currentReportId = null;
+            let reports = [];
 
-            shareButton.addEventListener('click', () => {
-                navigator.clipboard.writeText(window.location.href).then(() => {
-                    shareFeedback.style.opacity = '1';
-                    setTimeout(() => { shareFeedback.style.opacity = '0'; }, 2000);
-                }).catch(err => { console.error('Failed to copy: ', err); });
-            });
+            // --- Modal & View Handling ---
+            const showModal = (modal) => {
+                modalBackdrop.classList.remove('hidden');
+                modal.classList.remove('hidden');
+            };
+            const hideModals = () => {
+                modalBackdrop.classList.add('hidden');
+                passwordModal.classList.add('hidden');
+                saveReportModal.classList.add('hidden');
+                passwordInput.value = '';
+                passwordError.textContent = '';
+                reportNameInput.value = '';
+                saveError.textContent = '';
+            };
             
-            // Password Modal Logic
-            uploadButton.addEventListener('click', () => {
-                passwordModal.classList.remove('hidden');
-                passwordInput.focus();
+            modalBackdrop.addEventListener('click', (e) => {
+                if(e.target === modalBackdrop) hideModals();
             });
-
-            passwordModal.addEventListener('click', (e) => {
-                if (e.target === passwordModal) {
-                    passwordModal.classList.add('hidden');
-                    passwordError.textContent = '';
-                    passwordInput.value = '';
-                }
-            });
-
+            uploadButton.addEventListener('click', () => showModal(passwordModal));
             passwordSubmit.addEventListener('click', () => {
                 if (passwordInput.value === '91965') {
-                    passwordModal.classList.add('hidden');
-                    passwordError.textContent = '';
-                    passwordInput.value = '';
+                    hideModals();
                     fileInput.click();
                 } else {
                     passwordError.textContent = 'ACCESS DENIED';
                     passwordInput.value = '';
                 }
             });
+            saveReportButton.addEventListener('click', () => showModal(saveReportModal));
+            saveCancel.addEventListener('click', hideModals);
+            saveConfirm.addEventListener('click', async () => {
+                const reportName = reportNameInput.value.trim();
+                if (!reportName) {
+                    saveError.textContent = "Report name cannot be empty.";
+                    return;
+                }
+                if (!currentCsvData) {
+                    saveError.textContent = "No data to save.";
+                    return;
+                }
+                try {
+                    const docRef = await addDoc(reportsCollection, {
+                        name: reportName,
+                        csvData: currentCsvData,
+                        createdAt: serverTimestamp()
+                    });
+                    hideModals();
+                    saveReportButton.classList.add('hidden');
+                    loadReport(docRef.id, currentCsvData);
+                } catch(e) {
+                    console.error("Error saving report:", e);
+                    saveError.textContent = "Failed to save report.";
+                }
+            });
 
-            const renderChart = (data) => {
+            showPastReportsBtn.addEventListener('click', () => {
+                pastReportsView.classList.remove('hidden');
+            });
+            backToMainViewBtn.addEventListener('click', () => {
+                pastReportsView.classList.add('hidden');
+            });
+
+
+            // --- Data & Rendering ---
+            const renderChart = (csvData) => {
+                if(!csvData) return;
+                
+                const data = d3.csvParse(csvData);
+                chartPlaceholder.style.display = 'none';
+                legendContent.classList.remove('hidden');
                 d3.select("#chart").selectAll("*").remove();
                 d3.select("#supervisor-legend").selectAll("*").remove();
 
                 const employeeData = d3.rollups(data, v => {
                     const excused = d3.sum(v, d => d.Excused === '1' ? 1 : 0);
-                    return { excused: excused, unexcused: v.length - excused, total: v.length, supervisor: v[0].Supervisor };
+                    return { excused, unexcused: v.length - excused, total: v.length, supervisor: v[0].Supervisor };
                 }, d => `${d.FirstName} ${d.LastName}`).map(([name, values]) => ({ name, ...values }));
 
                 employeeData.sort((a, b) => b.total - a.total);
 
                 const supervisors = [...new Set(employeeData.map(d => d.supervisor))].sort();
-                const supervisorStats = d3.rollups(data, v => v.length, d => d.Supervisor).map(([name, count]) => ({ name, count })).sort((a, b) => b.count - a.count);
+                const supervisorStats = new Map(d3.rollups(data, v => v.length, d => d.Supervisor));
 
                 const margin = { top: 20, right: 30, bottom: 40, left: 150 };
-                const chartElement = document.getElementById('chart');
+                const chartElement = document.getElementById('chart-container');
                 const width = chartElement.clientWidth - margin.left - margin.right;
-                const height = Math.max(600, employeeData.length * 30);
+                const height = Math.max(600, employeeData.length * 35);
                 
-                d3.select(chartElement).style('height', `${height + margin.top + margin.bottom}px`);
+                d3.select("#chart").style('height', `${height + margin.top + margin.bottom}px`);
 
                 const svg = d3.select("#chart").append("svg")
                     .attr("width", "100%").attr("height", "100%")
                     .attr('viewBox', `0 0 ${width + margin.left + margin.right} ${height + margin.top + margin.bottom}`)
                     .append("g").attr("transform", `translate(${margin.left},${margin.top})`);
                 
-                const xScale = d3.scaleLinear().domain([0, d3.max(employeeData, d => d.total)]).range([0, width]);
+                const xScale = d3.scaleLinear().domain([0, d3.max(employeeData, d => d.total) || 1]).range([0, width]);
                 const yScale = d3.scaleBand().domain(employeeData.map(d => d.name)).range([0, height]).padding(0.5);
                 const supervisorColor = d3.scaleOrdinal().domain(supervisors).range(["#10B981", "#F59E0B", "#3B82F6", "#EF4444", "#8B5CF6", "#EC4899", "#6366F1", "#14B8A6"]);
                 
@@ -362,26 +440,21 @@ Bishnu,Wagle,1,Jason Daugherty`;
                 svg.append("text").attr("class", "axis-label").attr("text-anchor", "middle").attr("x", width / 2).attr("y", height + margin.bottom - 5).text("Number of Call-Offs");
 
                 const tooltip = d3.select("#tooltip");
-
                 const groups = svg.selectAll(".bar-group").data(employeeData).enter().append("g")
                     .attr("class", "bar-group").attr("transform", d => `translate(0, ${yScale(d.name)})`)
-                    .on("mouseover", function(event, d) {
-                        tooltip.transition().duration(200).style("opacity", 1);
-                        tooltip.html(`<div class="font-bold text-white text-base">${d.name}</div><div class="text-sm text-gray-400 mb-2">Supervisor: ${d.supervisor}</div><div class="w-full h-px bg-gray-600 my-1"></div><div class="flex justify-between text-sm"><span class="text-gray-300">Total:</span> <span class="font-bold text-white">${d.total}</span></div><div class="flex justify-between text-sm"><span class="text-white">Excused:</span> <span class="font-bold text-white">${d.excused}</span></div><div class="flex justify-between text-sm"><span class="text-gray-400">Unexcused:</span> <span class="font-bold text-gray-400">${d.unexcused}</span></div>`)
-                        .style("left", (event.pageX + 20) + "px").style("top", (event.pageY - 20) + "px");
-                    }).on("mouseout", () => tooltip.transition().duration(500).style("opacity", 0));
+                    .on("mouseover", (event, d) => {
+                        tooltip.style("opacity", 1).html(`<div class="font-bold text-white text-base">${d.name}</div><div class="text-sm text-gray-400 mb-2">Supervisor: ${d.supervisor}</div><hr class="border-gray-600 my-1"><div class="flex justify-between text-sm"><span class="text-gray-300">Total:</span> <span class="font-bold text-white">${d.total}</span></div><div><span class="text-white">Excused:</span> <span class="font-bold text-white">${d.excused}</span></div><div><span class="text-gray-400">Unexcused:</span> <span class="font-bold text-gray-400">${d.unexcused}</span></div>`)
+                        .style("left", `${event.pageX + 20}px`).style("top", `${event.pageY - 20}px`);
+                    }).on("mouseout", () => tooltip.style("opacity", 0));
                 
                 groups.append("rect").attr("x", 0).attr("width", d => Math.max(0, xScale(d.total))).attr("height", yScale.bandwidth()).attr("fill", d => supervisorColor(d.supervisor)).attr("rx", 2);
-                
-                const innerBarHeight = yScale.bandwidth() * 0.3; // Made the inner bar smaller
+                const innerBarHeight = yScale.bandwidth() * 0.3;
                 const innerBarY = (yScale.bandwidth() - innerBarHeight) / 2;
-
                 groups.append("rect").attr("x", 0).attr("y", innerBarY).attr("width", d => Math.max(0, xScale(d.unexcused))).attr("height", innerBarHeight).attr("fill", "#4b5563"); 
                 groups.append("rect").attr("x", d => xScale(d.unexcused)).attr("y", innerBarY).attr("width", d => Math.max(0, xScale(d.excused))).attr("height", innerBarHeight).attr("fill", "#ffffff");
                 
                 supervisors.forEach(sup => {
-                    const stat = supervisorStats.find(s => s.name === sup);
-                    const count = stat ? stat.count : 0;
+                    const count = supervisorStats.get(sup) || 0;
                     const legendItem = d3.select("#supervisor-legend").append("div").attr("class", "flex items-center justify-between");
                     const nameContainer = legendItem.append("div").attr("class", "flex items-center");
                     nameContainer.append("div").style("width", "12px").style("height", "12px").style("background-color", supervisorColor(sup)).attr("class", "mr-3 rounded-sm flex-shrink-0");
@@ -390,50 +463,89 @@ Bishnu,Wagle,1,Jason Daugherty`;
                 });
             };
 
-            const loadDataFromFile = (file) => {
-                const reader = new FileReader();
-                reader.onload = e => {
-                    try {
-                        const data = d3.csvParse(e.target.result);
-                        if (data.length > 0) renderChart(data);
-                        else alert('ERROR: Uploaded file is empty or invalid.');
-                    } catch (error) {
-                        alert('ERROR: Could not parse CSV file. Check format.');
-                        console.error("CSV Parse Error:", error);
-                    }
-                };
-                reader.onerror = () => alert('ERROR: Could not read file.');
-                reader.readAsText(file);
+            const loadReport = (reportId, csvData) => {
+                currentReportId = reportId;
+                currentCsvData = csvData;
+                renderChart(csvData);
+                saveReportButton.classList.add('hidden');
+                shareButton.disabled = false;
+                
+                document.querySelectorAll('.report-item').forEach(el => {
+                    el.classList.toggle('active', el.dataset.id === reportId);
+                });
+                pastReportsView.classList.add('hidden');
             };
 
-            fileInput.addEventListener('change', (event) => {
-                const file = event.target.files[0];
-                if (file) loadDataFromFile(file);
+            const renderReportsList = () => {
+                reportsListContainer.innerHTML = '';
+                reports.sort((a,b) => b.createdAt?.toMillis() - a.createdAt?.toMillis());
+                reports.forEach(report => {
+                    const item = document.createElement('div');
+                    item.className = 'report-item p-3 rounded-lg cursor-pointer border-l-4 border-transparent hover:bg-gray-800/50 transition-colors duration-200';
+                    item.dataset.id = report.id;
+                    const date = report.createdAt ? new Date(report.createdAt.toMillis()).toLocaleDateString() : 'No date';
+                    item.innerHTML = `<p class="font-bold text-white truncate">${report.name}</p><p class="text-xs text-gray-400">${date}</p>`;
+                    item.addEventListener('click', () => loadReport(report.id, report.csvData));
+                    reportsListContainer.appendChild(item);
+                });
+            };
+
+            // --- Firestore Listener ---
+            onSnapshot(query(reportsCollection), (snapshot) => {
+                reports = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                renderReportsList();
+                if(currentReportId) {
+                     document.querySelectorAll('.report-item').forEach(el => {
+                        el.classList.toggle('active', el.dataset.id === currentReportId);
+                    });
+                }
             });
 
-            // Initial load
-            try {
-                const initialData = d3.csvParse(initialCsvData);
-                renderChart(initialData);
-            } catch (error) {
-                alert('FATAL ERROR: Could not parse embedded data.');
-                console.error("Initial Data Parse Error:", error);
-                d3.select("#chart").html(`<div class="text-red-400 p-4">Error: Could not parse the embedded data.</div>`);
+            // --- Event Listeners ---
+            fileInput.addEventListener('change', (event) => {
+                const file = event.target.files[0];
+                if (!file) return;
+                const reader = new FileReader();
+                reader.onload = e => {
+                    currentCsvData = e.target.result;
+                    currentReportId = null;
+                    renderChart(currentCsvData);
+                    saveReportButton.classList.remove('hidden');
+                    shareButton.disabled = true;
+                    document.querySelectorAll('.report-item').forEach(el => el.classList.remove('active'));
+                };
+                reader.readAsText(file);
+            });
+
+            shareButton.addEventListener('click', () => {
+                if (!currentReportId) return;
+                const url = `${window.location.origin}${window.location.pathname}?reportId=${currentReportId}`;
+                navigator.clipboard.writeText(url).then(() => {
+                    shareFeedback.style.opacity = '1';
+                    setTimeout(() => { shareFeedback.style.opacity = '0'; }, 2000);
+                });
+            });
+
+            // --- Initial Load from URL ---
+            const urlParams = new URLSearchParams(window.location.search);
+            const reportIdFromUrl = urlParams.get('reportId');
+            if (reportIdFromUrl) {
+                const docRef = doc(db, `/artifacts/${appId}/public/data/reports`, reportIdFromUrl);
+                getDoc(docRef).then(docSnap => {
+                    if (docSnap.exists()) {
+                        const report = docSnap.data();
+                        loadReport(docSnap.id, report.csvData);
+                    } else {
+                        console.log("No such document!");
+                    }
+                }).catch(error => { console.error("Error getting document:", error); });
             }
 
-            // Responsive chart rendering
             window.addEventListener('resize', () => {
-                try {
-                    if (fileInput.files[0]) {
-                        loadDataFromFile(fileInput.files[0]);
-                    } else {
-                        renderChart(d3.csvParse(initialCsvData));
-                    }
-                } catch(e) { console.error("Resize render error:", e)}
+                if(currentCsvData) renderChart(currentCsvData);
             });
         }
     </script>
-
 </body>
 </html>
 
