@@ -538,9 +538,7 @@
                 const groups = svg.selectAll(".bar-group").data(employeeData).enter().append("g")
                     .attr("class", "bar-group").attr("transform", d => `translate(0, ${yScale(d.name)})`)
                     .on("mouseover", (event, d) => {
-                        tooltip.style("opacity", 1).html(`<div class="font-bold text-white text-base">${d.name}</div><div class="text-sm text-gray-400 mb-2">Supervisor: ${d.supervisor}</div><hr class="border-gray-600 my-1"><div class="flex justify-between text-sm"><span class="text-gray-300">Total:</span> <span class="font-bold text-white">${d.total}</span></div><div><span class="text-lime-400">Excused:</span> <span class="font-bold text-white">${d.excused}</span></div><div><span class="text-red-400">Unexcused:</span> <span class="font-bold text-white">${d.unexcused}</span></div>`)
-                        .style("left", `${event.pageX + 20}px`).style("top", `${event.pageY - 20}px`);
-                    }).on("mouseout", () => tooltip.style("opacity", 0));
+                                               tooltip.style("opacity", 1).html(`<div class="font-bold text-white text-base">${d.name}</div><div class="text-sm text-gray-400 mb-2">Supervisor: ${d.supervisor}</div><hr class="border-gray-600 my-1"><div class="flex justify-between text-sm"><span class="text-gray-300"> </span></div><div><span class="text-lime-400">Excused:</span> <span class="font-bold text-white">${d.excused}</span></div><div><span class="text-red-400">Unexcused:</span> <span class="font-bold text-white">${d.unexcused}</span></div>`)
                 
                 // Unexcused portion
                 groups.append("rect")
