@@ -192,7 +192,7 @@
         <div class="flex justify-between items-center mb-4 border-b border-gray-700/50 pb-4 flex-shrink-0">
             <div>
                 <h1 class="text-xl sm:text-2xl text-lime-400 tracking-wider">CALL-OFF ANALYSIS</h1>
-                <p class="text-[10px] text-lime-400/80 [text-shadow:0_0_8px_rgba(163,230,53,0.8)]">DEVELOPED BY ROCHAK KADEL</p>
+                <p id="current-report-title" class="text-sm text-gray-400 h-6 truncate"></p>
             </div>
         </div>
 
@@ -340,6 +340,7 @@
             const pastReportsView = document.getElementById('past-reports-view');
             const showPastReportsBtn = document.getElementById('show-past-reports-btn');
             const backToMainViewBtn = document.getElementById('back-to-main-view-btn');
+            const currentReportTitle = document.getElementById('current-report-title');
 
             // --- App State ---
             let currentCsvData = null;
@@ -423,7 +424,7 @@
                     });
                     hideModals();
                     saveReportButton.classList.add('hidden');
-                    loadReport(docRef.id, currentCsvData);
+                    loadReport(docRef.id, currentCsvData, reportName);
                 } catch(e) {
                     console.error("Error saving report:", e);
                     saveError.textContent = `Failed to save: ${e.message}`;
@@ -450,6 +451,7 @@
                 currentCsvData = null;
                 currentReportId = null;
                 shareButton.disabled = true;
+                currentReportTitle.textContent = '';
             };
             
             const deleteReport = async (reportId) => {
@@ -540,9 +542,10 @@
                 });
             };
 
-            const loadReport = (reportId, csvData) => {
+            const loadReport = (reportId, csvData, reportName) => {
                 currentReportId = reportId;
                 currentCsvData = csvData;
+                currentReportTitle.textContent = reportName || '';
                 renderChart(csvData);
                 saveReportButton.classList.add('hidden');
                 shareButton.disabled = false;
@@ -563,7 +566,7 @@
                     
                     const infoDiv = document.createElement('div');
                     infoDiv.innerHTML = `<p class="font-bold text-white truncate">${report.name}</p><p class="text-xs text-gray-400">${report.createdAt ? new Date(report.createdAt.toMillis()).toLocaleDateString() : 'No date'}</p>`;
-                    infoDiv.addEventListener('click', () => loadReport(report.id, report.csvData));
+                    infoDiv.addEventListener('click', () => loadReport(report.id, report.csvData, report.name));
 
                     const deleteBtn = document.createElement('button');
                     deleteBtn.className = 'delete-btn p-2 rounded-full hover:bg-red-500/20 text-gray-500 hover:text-red-400 transition-colors';
@@ -605,6 +608,7 @@
                     saveReportButton.classList.remove('hidden');
                     shareButton.disabled = true;
                     document.querySelectorAll('.report-item').forEach(el => el.classList.remove('active'));
+                    currentReportTitle.textContent = `[New Report: ${file.name}]`;
                 };
                 reader.readAsText(file);
             });
@@ -626,7 +630,7 @@
                 getDoc(docRef).then(docSnap => {
                     if (docSnap.exists()) {
                         const report = docSnap.data();
-                        loadReport(docSnap.id, report.csvData);
+                        loadReport(docSnap.id, report.csvData, report.name);
                     } else {
                         console.log("No such document!");
                     }
