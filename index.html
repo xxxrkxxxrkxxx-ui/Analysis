@@ -8,7 +8,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Courier+Prime:wght@400;700&display=swap" rel="stylesheet">
     <style>
-        body {
+        body, html {
             font-family: 'Courier Prime', 'Courier New', monospace;
             font-weight: bold;
             background-color: #000000;
@@ -222,8 +222,8 @@
                     <div id="legend-content" class="hidden">
                         <div class="mb-6">
                             <h4 class="font-bold text-sm text-gray-300 mb-2">CALL-OFF TYPE</h4>
-                            <div class="flex items-center mb-2"><div class="w-4 h-4 rounded-sm bg-white mr-3"></div><span class="text-sm text-gray-300">Excused</span></div>
-                            <div class="flex items-center"><div class="w-4 h-4 rounded-sm bg-gray-600 mr-3"></div><span class="text-sm text-gray-300">Unexcused</span></div>
+                            <div class="flex items-center mb-2"><div class="w-4 h-4 rounded-sm bg-lime-500 mr-3"></div><span class="text-sm text-gray-300">Excused</span></div>
+                            <div class="flex items-center"><div class="w-4 h-4 rounded-sm bg-red-500 mr-3"></div><span class="text-sm text-gray-300">Unexcused</span></div>
                         </div>
                         <div class="mb-6"><h4 class="font-bold text-sm text-gray-300 mb-2">SUPERVISOR</h4><div id="supervisor-legend" class="space-y-2"></div></div>
                     </div>
@@ -499,7 +499,6 @@
                 
                 const xScale = d3.scaleLinear().domain([0, d3.max(employeeData, d => d.total) || 1]).range([0, width]);
                 const yScale = d3.scaleBand().domain(employeeData.map(d => d.name)).range([0, height]).padding(0.5);
-                const supervisorColor = d3.scaleOrdinal().domain(supervisors).range(["#10B981", "#F59E0B", "#3B82F6", "#EF4444", "#8B5CF6", "#EC4899", "#6366F1", "#14B8A6"]);
                 
                 svg.append("g").call(d3.axisLeft(yScale).tickSize(0)).select(".domain").remove();
                 svg.append("g").attr("transform", `translate(0,${height})`).call(d3.axisBottom(xScale).ticks(Math.min(10, d3.max(employeeData, d => d.total))));
@@ -509,23 +508,35 @@
                 const groups = svg.selectAll(".bar-group").data(employeeData).enter().append("g")
                     .attr("class", "bar-group").attr("transform", d => `translate(0, ${yScale(d.name)})`)
                     .on("mouseover", (event, d) => {
-                        tooltip.style("opacity", 1).html(`<div class="font-bold text-white text-base">${d.name}</div><div class="text-sm text-gray-400 mb-2">Supervisor: ${d.supervisor}</div><hr class="border-gray-600 my-1"><div class="flex justify-between text-sm"><span class="text-gray-300">Total:</span> <span class="font-bold text-white">${d.total}</span></div><div><span class="text-white">Excused:</span> <span class="font-bold text-white">${d.excused}</span></div><div><span class="text-gray-400">Unexcused:</span> <span class="font-bold text-gray-400">${d.unexcused}</span></div>`)
+                        tooltip.style("opacity", 1).html(`<div class="font-bold text-white text-base">${d.name}</div><div class="text-sm text-gray-400 mb-2">Supervisor: ${d.supervisor}</div><hr class="border-gray-600 my-1"><div class="flex justify-between text-sm"><span class="text-gray-300">Total:</span> <span class="font-bold text-white">${d.total}</span></div><div><span class="text-lime-400">Excused:</span> <span class="font-bold text-white">${d.excused}</span></div><div><span class="text-red-400">Unexcused:</span> <span class="font-bold text-white">${d.unexcused}</span></div>`)
                         .style("left", `${event.pageX + 20}px`).style("top", `${event.pageY - 20}px`);
                     }).on("mouseout", () => tooltip.style("opacity", 0));
                 
-                groups.append("rect").attr("x", 0).attr("width", d => Math.max(0, xScale(d.total))).attr("height", yScale.bandwidth()).attr("fill", d => supervisorColor(d.supervisor)).attr("rx", 2);
-                const innerBarHeight = yScale.bandwidth() * 0.3;
-                const innerBarY = (yScale.bandwidth() - innerBarHeight) / 2;
-                groups.append("rect").attr("x", 0).attr("y", innerBarY).attr("width", d => Math.max(0, xScale(d.unexcused))).attr("height", innerBarHeight).attr("fill", "#4b5563"); 
-                groups.append("rect").attr("x", d => xScale(d.unexcused)).attr("y", innerBarY).attr("width", d => Math.max(0, xScale(d.excused))).attr("height", innerBarHeight).attr("fill", "#ffffff");
+                // Unexcused portion
+                groups.append("rect")
+                    .attr("x", 0)
+                    .attr("y", 0)
+                    .attr("width", d => Math.max(0, xScale(d.unexcused)))
+                    .attr("height", yScale.bandwidth())
+                    .attr("fill", "#ef4444") // red-500
+                    .attr("rx", 2);
+                
+                // Excused portion (stacked on top)
+                groups.append("rect")
+                    .attr("x", d => xScale(d.unexcused))
+                    .attr("y", 0)
+                    .attr("width", d => Math.max(0, xScale(d.excused)))
+                    .attr("height", yScale.bandwidth())
+                    .attr("fill", "#84cc16") // lime-500
+                    .attr("rx", 2);
+
                 
                 supervisors.forEach(sup => {
                     const count = supervisorStats.get(sup) || 0;
                     const legendItem = d3.select("#supervisor-legend").append("div").attr("class", "flex items-center justify-between");
                     const nameContainer = legendItem.append("div").attr("class", "flex items-center");
-                    nameContainer.append("div").style("width", "12px").style("height", "12px").style("background-color", supervisorColor(sup)).attr("class", "mr-3 rounded-sm flex-shrink-0");
-                    nameContainer.append("span").text(sup).attr("class", "text-xs text-gray-300 truncate pr-2");
-                    legendItem.append("span").text(count).attr("class", "text-xs font-bold text-lime-400");
+                    nameContainer.append("span").text(sup).attr("class", "text-sm text-gray-300 truncate pr-2");
+                    legendItem.append("span").text(count).attr("class", "text-sm font-bold text-lime-400");
                 });
             };
 
