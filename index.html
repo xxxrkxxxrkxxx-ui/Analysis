@@ -125,9 +125,9 @@
             border-color: white;
         }
         .btn-secondary {
-            background-color: #374151; /* gray-700 */
-            color: white;
-            border-color: #4b5563; /* gray-600 */
+            background-color: white;
+            color: black;
+            border-color: white;
         }
         .btn-secondary:hover {
             background-color: black;
@@ -164,9 +164,9 @@
             <p id="password-error" class="text-red-500 text-xs mt-2 h-4"></p>
             <button id="password-submit" class="btn btn-primary w-full mt-4">SUBMIT</button>
         </div>
-        <!-- Save Report Modal -->
-        <div id="save-report-modal" class="hidden panel p-6 rounded-lg text-center w-80">
-            <h3 class="text-lg text-lime-400 mb-4">SAVE REPORT</h3>
+        <!-- Save/Edit Report Modal -->
+        <div id="report-name-modal" class="hidden panel p-6 rounded-lg text-center w-80">
+            <h3 id="report-name-modal-title" class="text-lg text-lime-400 mb-4">SAVE REPORT</h3>
             <p class="text-gray-300 mb-4">Enter a name for this report.</p>
             <input type="text" id="report-name-input" placeholder="e.g., Q3 Call-Offs" class="bg-gray-900 text-center text-lime-400 font-bold p-2 rounded border border-gray-600 focus:outline-none focus:ring-2 focus:ring-lime-400 w-full">
             <p id="save-error" class="text-red-500 text-xs mt-2 h-4"></p>
@@ -201,11 +201,11 @@
                 <div class="flex items-center gap-4">
                      <button id="upload-button" class="btn btn-primary">CREATE NEW REPORT</button>
                      <input type="file" id="csv-file-input" accept=".csv" class="hidden">
-                     <button id="show-past-reports-btn" class="btn btn-secondary">SEE PAST REPORTS</button>
+                     <button id="show-past-reports-btn" class="btn btn-primary">SEE PAST REPORTS</button>
                      <button id="save-report-button" class="hidden btn btn-primary">Save</button>
                 </div>
                  <div>
-                    <button id="share-button" class="btn btn-secondary" disabled>Share Report</button>
+                    <button id="share-button" class="btn btn-primary" disabled>Share Report</button>
                     <span id="share-feedback" class="ml-4 text-emerald-400 opacity-0">Link Copied!</span>
                 </div>
             </div>
@@ -236,7 +236,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, collection, addDoc, onSnapshot, query, doc, getDoc, serverTimestamp, setLogLevel, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, onSnapshot, query, doc, getDoc, serverTimestamp, setLogLevel, deleteDoc, updateDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         document.addEventListener('DOMContentLoaded', () => {
             // --- Loader Animation ---
@@ -329,7 +329,8 @@
             const passwordInput = document.getElementById('password-input');
             const passwordSubmit = document.getElementById('password-submit');
             const passwordError = document.getElementById('password-error');
-            const saveReportModal = document.getElementById('save-report-modal');
+            const reportNameModal = document.getElementById('report-name-modal');
+            const reportNameModalTitle = document.getElementById('report-name-modal-title');
             const reportNameInput = document.getElementById('report-name-input');
             const saveConfirm = document.getElementById('save-confirm');
             const saveCancel = document.getElementById('save-cancel');
@@ -346,7 +347,7 @@
             let currentCsvData = null;
             let currentReportId = null;
             let reports = [];
-            let actionToConfirm = null; // { type: 'upload' } or { type: 'delete', id: '...' }
+            let actionToConfirm = null; 
 
             // --- Modal & View Handling ---
             const showModal = (modal) => {
@@ -356,7 +357,7 @@
             const hideModals = () => {
                 modalBackdrop.classList.add('hidden');
                 passwordModal.classList.add('hidden');
-                saveReportModal.classList.add('hidden');
+                reportNameModal.classList.add('hidden');
                 passwordInput.value = '';
                 passwordError.textContent = '';
                 reportNameInput.value = '';
@@ -370,7 +371,7 @@
 
             uploadButton.addEventListener('click', () => {
                 passwordModalTitle.textContent = "ACCESS REQUIRED";
-                passwordModalSubtitle.textContent = "Enter access code.";
+                passwordModalSubtitle.textContent = "Enter access code to upload file.";
                 actionToConfirm = { type: 'upload' };
                 showModal(passwordModal);
             });
@@ -390,11 +391,22 @@
                 } else if (actionToConfirm.type === 'delete') {
                     await deleteReport(actionToConfirm.id);
                     hideModals();
+                } else if (actionToConfirm.type === 'edit') {
+                    hideModals();
+                    reportNameModalTitle.textContent = "EDIT REPORT NAME";
+                    reportNameInput.value = actionToConfirm.name;
+                    showModal(reportNameModal);
                 }
             });
 
-            saveReportButton.addEventListener('click', () => showModal(saveReportModal));
+            saveReportButton.addEventListener('click', () => {
+                reportNameModalTitle.textContent = "SAVE REPORT";
+                actionToConfirm = { type: 'save' };
+                showModal(reportNameModal);
+            });
+
             saveCancel.addEventListener('click', hideModals);
+
             saveConfirm.addEventListener('click', async () => {
                 if (authFailed) {
                     saveError.textContent = "Auth failed. Enable Anonymous sign-in in Firebase.";
@@ -404,29 +416,38 @@
                 saveConfirm.textContent = 'SAVING...';
                 saveError.textContent = '';
                 const reportName = reportNameInput.value.trim();
+                
                 if (!reportName) {
                     saveError.textContent = "Report name cannot be empty.";
                     saveConfirm.disabled = false;
                     saveConfirm.textContent = 'SAVE';
                     return;
                 }
-                if (!currentCsvData) {
-                    saveError.textContent = "No data to save.";
-                    saveConfirm.disabled = false;
-                    saveConfirm.textContent = 'SAVE';
-                    return;
-                }
+
                 try {
-                    const docRef = await addDoc(reportsCollection, {
-                        name: reportName,
-                        csvData: currentCsvData,
-                        createdAt: serverTimestamp()
-                    });
-                    hideModals();
-                    saveReportButton.classList.add('hidden');
-                    loadReport(docRef.id, currentCsvData, reportName);
+                    if (actionToConfirm && actionToConfirm.type === 'edit') {
+                        // Handle editing existing report
+                        const docRef = doc(db, reportsCollectionPath, actionToConfirm.id);
+                        await updateDoc(docRef, { name: reportName });
+                        if(currentReportId === actionToConfirm.id) {
+                            currentReportTitle.textContent = reportName;
+                        }
+                    } else { 
+                        // Handle saving new report
+                         if (!currentCsvData) {
+                            saveError.textContent = "No data to save.";
+                            return;
+                        }
+                        const docRef = await addDoc(reportsCollection, {
+                            name: reportName,
+                            csvData: currentCsvData,
+                            createdAt: serverTimestamp()
+                        });
+                        loadReport(docRef.id, currentCsvData, reportName);
+                    }
+                     hideModals();
                 } catch(e) {
-                    console.error("Error saving report:", e);
+                    console.error("Error saving/updating report:", e);
                     saveError.textContent = `Failed to save: ${e.message}`;
                 } finally {
                     saveConfirm.disabled = false;
@@ -561,12 +582,28 @@
                 reports.sort((a,b) => b.createdAt?.toMillis() - a.createdAt?.toMillis());
                 reports.forEach(report => {
                     const item = document.createElement('div');
-                    item.className = 'report-item flex justify-between items-center p-3 rounded-lg cursor-pointer border-l-4 border-transparent hover:bg-gray-800/50 transition-colors duration-200';
+                    item.className = 'report-item flex justify-between items-center p-3 rounded-lg border-l-4 border-transparent hover:bg-gray-800/50 transition-colors duration-200';
                     item.dataset.id = report.id;
                     
                     const infoDiv = document.createElement('div');
+                    infoDiv.className = "flex-grow cursor-pointer pr-4";
                     infoDiv.innerHTML = `<p class="font-bold text-white truncate">${report.name}</p><p class="text-xs text-gray-400">${report.createdAt ? new Date(report.createdAt.toMillis()).toLocaleDateString() : 'No date'}</p>`;
                     infoDiv.addEventListener('click', () => loadReport(report.id, report.csvData, report.name));
+
+                    const controlsDiv = document.createElement('div');
+                    controlsDiv.className = "flex items-center gap-2 flex-shrink-0";
+                    
+                    const editBtn = document.createElement('button');
+                    editBtn.className = 'edit-btn p-2 rounded-full hover:bg-blue-500/20 text-gray-500 hover:text-blue-400 transition-colors';
+                    editBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M17.414 2.586a2 2 0 00-2.828 0L7 10.172V13h2.828l7.586-7.586a2 2 0 000-2.828z" /><path fill-rule="evenodd" d="M2 6a2 2 0 012-2h4a1 1 0 010 2H4v10h10v-4a1 1 0 112 0v4a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" clip-rule="evenodd" /></svg>`;
+                    editBtn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        passwordModalTitle.textContent = "EDIT REPORT";
+                        passwordModalSubtitle.textContent = `Enter access code to edit "${report.name}"`;
+                        actionToConfirm = { type: 'edit', id: report.id, name: report.name };
+                        showModal(passwordModal);
+                    });
+
 
                     const deleteBtn = document.createElement('button');
                     deleteBtn.className = 'delete-btn p-2 rounded-full hover:bg-red-500/20 text-gray-500 hover:text-red-400 transition-colors';
@@ -579,8 +616,10 @@
                         showModal(passwordModal);
                     });
 
+                    controlsDiv.appendChild(editBtn);
+                    controlsDiv.appendChild(deleteBtn);
                     item.appendChild(infoDiv);
-                    item.appendChild(deleteBtn);
+                    item.appendChild(controlsDiv);
                     reportsListContainer.appendChild(item);
                 });
             };
