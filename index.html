@@ -235,7 +235,7 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, collection, addDoc, onSnapshot, query, doc, getDoc, serverTimestamp, setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         document.addEventListener('DOMContentLoaded', () => {
@@ -285,11 +285,19 @@
 
         async function initializeChartApp() {
             // --- Firebase Setup ---
-            const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-            const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : null;
+            // This configuration is now hardcoded for deployment.
+            const firebaseConfig = {
+              apiKey: "AIzaSyAUOw6yXiMqZtGzkx65Iq7Z2VnTwhHXNPY",
+              authDomain: "call-off-tracker.firebaseapp.com",
+              projectId: "call-off-tracker",
+              storageBucket: "call-off-tracker.appspot.com",
+              messagingSenderId: "663920676209",
+              appId: "1:663920676209:web:769030ed09f3cdb36dfad0",
+              measurementId: "G-LMSZP6RY9X"
+            };
             
-            if (!firebaseConfig) {
-                document.getElementById('chart-placeholder').innerHTML = '<p class="text-red-500">Firebase configuration is missing. App cannot function.</p>';
+            if (!firebaseConfig || !firebaseConfig.projectId) {
+                document.getElementById('chart-placeholder').innerHTML = '<p class="text-red-500">Firebase configuration is missing or invalid.</p>';
                 return;
             }
 
@@ -298,15 +306,16 @@
             const db = getFirestore(app);
             setLogLevel('debug');
 
+            let authFailed = false;
             try {
-                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                    await signInWithCustomToken(auth, __initial_auth_token);
-                } else {
-                    await signInAnonymously(auth);
-                }
-            } catch(e) { console.error("Firebase auth error:", e); }
+                // For public hosting, we sign in users anonymously.
+                await signInAnonymously(auth);
+            } catch(e) {
+                console.error("Firebase auth error:", e);
+                authFailed = true; // Flag that auth failed
+            }
 
-            const reportsCollection = collection(db, `/artifacts/${appId}/public/data/reports`);
+            const reportsCollection = collection(db, `/artifacts/${firebaseConfig.projectId}/public/data/reports`);
 
             // --- DOM Elements ---
             const fileInput = document.getElementById('csv-file-input');
@@ -367,6 +376,10 @@
             saveReportButton.addEventListener('click', () => showModal(saveReportModal));
             saveCancel.addEventListener('click', hideModals);
             saveConfirm.addEventListener('click', async () => {
+                if (authFailed) {
+                    saveError.textContent = "Auth failed. Enable Anonymous sign-in in Firebase.";
+                    return;
+                }
                 const reportName = reportNameInput.value.trim();
                 if (!reportName) {
                     saveError.textContent = "Report name cannot be empty.";
@@ -530,7 +543,7 @@
             const urlParams = new URLSearchParams(window.location.search);
             const reportIdFromUrl = urlParams.get('reportId');
             if (reportIdFromUrl) {
-                const docRef = doc(db, `/artifacts/${appId}/public/data/reports`, reportIdFromUrl);
+                const docRef = doc(db, `/artifacts/${firebaseConfig.projectId}/public/data/reports`, reportIdFromUrl);
                 getDoc(docRef).then(docSnap => {
                     if (docSnap.exists()) {
                         const report = docSnap.data();
