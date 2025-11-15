@@ -95,6 +95,14 @@
             }
             20%, 24%, 55% { text-shadow: none; }
         }
+        @keyframes blink {
+            0%, 50% { opacity: 1; }
+            51%, 100% { opacity: 0; }
+        }
+        #cursor {
+            animation: blink 1s step-end infinite;
+            display: inline-block;
+        }
         #app-wrapper.hidden { display: none; }
         .report-item.active {
             background-color: rgba(163, 230, 53, 0.2);
@@ -140,7 +148,7 @@
     <!-- Hacker Loader -->
     <div id="loader">
         <div class="loader-content">
-            <p id="typewriter-text" class="loader-subtitle">Access Declined</p>
+            <p id="typewriter-text" class="loader-subtitle"><span id="typing-effect"></span><span id="cursor">_</span></p>
         </div>
     </div>
     
@@ -231,66 +239,64 @@
         import { getFirestore, collection, addDoc, onSnapshot, query, doc, getDoc, serverTimestamp, setLogLevel, deleteDoc, updateDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         document.addEventListener('DOMContentLoaded', () => {
-            // --- Typewriter Animation ---
+            // --- Typewriter Animation (2 seconds total) ---
             const loader = document.getElementById('loader');
             const appWrapper = document.getElementById('app-wrapper');
-            const typewriterText = document.getElementById('typewriter-text');
+            const typingEffect = document.getElementById('typing-effect');
             
-            let currentText = "Access Declined";
-            let isBackspacing = false;
-            let charIndex = currentText.length;
-            
-            const typewriter = () => {
-                if (!isBackspacing) {
-                    // Show "Access Declined" first
-                    if (charIndex < currentText.length) {
-                        typewriterText.textContent = currentText.substring(0, charIndex + 1);
-                        charIndex++;
-                        setTimeout(typewriter, 100);
+            const startAnimation = () => {
+                const text1 = "Access Declined";
+                let step = 0;
+                
+                // Type "Access Declined" - 14 characters in ~770ms (55ms per char)
+                const typeDeclined = () => {
+                    if (step < text1.length) {
+                        typingEffect.textContent = text1.substring(0, step + 1);
+                        step++;
+                        setTimeout(typeDeclined, 55);
                     } else {
-                        // Wait a bit, then start backspacing
+                        // Brief pause, then backspace "declined" - 7 chars in ~245ms (35ms per char)
                         setTimeout(() => {
-                            isBackspacing = true;
-                            charIndex = currentText.length;
-                            typewriter();
-                        }, 1000);
+                            step = text1.length; // Start from full length (14)
+                            const backspace = () => {
+                                if (step > 7) { // "Access " is 7 chars, so stop there
+                                    step--;
+                                    typingEffect.textContent = text1.substring(0, step);
+                                    setTimeout(backspace, 35);
+                                } else {
+                                    // Type "granted" - 7 chars in ~420ms (60ms per char)
+                                    let grantedStep = 0;
+                                    const typeGranted = () => {
+                                        if (grantedStep < 7) {
+                                            typingEffect.textContent = "Access " + "granted".substring(0, grantedStep + 1);
+                                            grantedStep++;
+                                            setTimeout(typeGranted, 60);
+                                        } else {
+                                            // Brief pause, then fade out (total exactly 2 seconds: 770+200+245+420+365=2000ms)
+                                            setTimeout(() => {
+                                                loader.classList.add('fade-out');
+                                                loader.addEventListener('transitionend', () => {
+                                                    loader.style.display = 'none';
+                                                    appWrapper.classList.remove('hidden');
+                                                    document.body.style.overflow = 'auto';
+                                                    initializeChartApp();
+                                                }, { once: true });
+                                            }, 365);
+                                        }
+                                    };
+                                    typeGranted();
+                                }
+                            };
+                            backspace();
+                        }, 200);
                     }
-                } else {
-                    // Backspace "declined"
-                    if (charIndex > 6) { // "Access " is 7 characters, so stop at index 7
-                        charIndex--;
-                        typewriterText.textContent = currentText.substring(0, charIndex);
-                        setTimeout(typewriter, 50);
-                    } else {
-                        // Type "granted"
-                        const granted = "granted";
-                        let grantedIndex = 0;
-                        const typeGranted = () => {
-                            if (grantedIndex < granted.length) {
-                                typewriterText.textContent = "Access " + granted.substring(0, grantedIndex + 1);
-                                grantedIndex++;
-                                setTimeout(typeGranted, 100);
-                            } else {
-                                // Animation complete, fade out loader
-                                setTimeout(() => {
-                                    loader.classList.add('fade-out');
-                                    loader.addEventListener('transitionend', () => {
-                                        loader.style.display = 'none';
-                                        appWrapper.classList.remove('hidden');
-                                        document.body.style.overflow = 'auto';
-                                        initializeChartApp();
-                                    }, { once: true });
-                                }, 1000);
-                            }
-                        };
-                        typeGranted();
-                    }
-                }
+                };
+                
+                typeDeclined();
             };
             
-            // Start typewriter animation
-            typewriterText.textContent = "";
-            setTimeout(typewriter, 500);
+            // Start animation immediately
+            startAnimation();
         });
 
         async function initializeChartApp() {
