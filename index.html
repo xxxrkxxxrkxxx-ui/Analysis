@@ -74,7 +74,6 @@
             z-index: 1;
             text-align: center;
             color: #0f0;
-            text-shadow: 0 0 10px #0f0, 0 0 20px #0f0;
             width: 100%;
             display: flex;
             align-items: center;
@@ -86,14 +85,14 @@
             animation: flicker 1.5s infinite alternate;
         }
         .loader-subtitle {
-            font-size: clamp(4rem, 15vw, 12rem);
-            font-weight: bold;
-            letter-spacing: 0.15em;
+            font-size: clamp(2.5rem, 8vw, 6rem);
+            font-weight: normal;
+            letter-spacing: 0.1em;
             margin: 0;
-            animation: flicker 2s infinite alternate;
             text-align: center;
             width: 100%;
             line-height: 1.2;
+            font-family: 'Courier Prime', 'Courier New', monospace;
         }
         @keyframes flicker {
             0%, 18%, 22%, 25%, 53%, 57%, 100% {
@@ -111,6 +110,7 @@
         #cursor {
             animation: blink 1s step-end infinite;
             display: inline-block;
+            color: #10b981;
         }
         #app-wrapper.hidden { display: none; }
         .report-item.active {
@@ -248,7 +248,7 @@
         import { getFirestore, collection, addDoc, onSnapshot, query, doc, getDoc, serverTimestamp, setLogLevel, deleteDoc, updateDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         document.addEventListener('DOMContentLoaded', () => {
-            // --- Typewriter Animation (2 seconds total) ---
+            // --- Typewriter Animation (3 seconds total) ---
             const loader = document.getElementById('loader');
             const appWrapper = document.getElementById('app-wrapper');
             const typingEffect = document.getElementById('typing-effect');
@@ -257,7 +257,7 @@
                 const text1 = "Access Declined";
                 let step = 0;
                 
-                // Type "Access Declined" - 14 characters in ~770ms (55ms per char)
+                // Type "Access Declined" - 14 characters in ~1050ms (75ms per char)
                 const typeDeclined = () => {
                     if (step < text1.length) {
                         const currentText = text1.substring(0, step + 1);
@@ -269,9 +269,9 @@
                             typingEffect.innerHTML = `<span style="color: #ffffff;">Access </span><span style="color: #ef4444;">${currentText.substring(7)}</span>`;
                         }
                         step++;
-                        setTimeout(typeDeclined, 55);
+                        setTimeout(typeDeclined, 75);
                     } else {
-                        // Brief pause, then backspace "declined" - 7 chars in ~245ms (35ms per char)
+                        // Brief pause, then backspace "declined" - 7 chars in ~350ms (50ms per char)
                         setTimeout(() => {
                             step = text1.length; // Start from full length (14)
                             const backspace = () => {
@@ -283,18 +283,18 @@
                                     } else {
                                         typingEffect.innerHTML = `<span style="color: #ffffff;">Access </span><span style="color: #ef4444;">${currentText.substring(7)}</span>`;
                                     }
-                                    setTimeout(backspace, 35);
+                                    setTimeout(backspace, 50);
                                 } else {
-                                    // Type "granted" - 7 chars in ~420ms (60ms per char)
+                                    // Type "granted" - 7 chars in ~600ms (85ms per char)
                                     let grantedStep = 0;
                                     const typeGranted = () => {
                                         if (grantedStep < 7) {
                                             const grantedText = "granted".substring(0, grantedStep + 1);
                                             typingEffect.innerHTML = `<span style="color: #ffffff;">Access </span><span style="color: #10b981;">${grantedText}</span>`;
                                             grantedStep++;
-                                            setTimeout(typeGranted, 60);
+                                            setTimeout(typeGranted, 85);
                                         } else {
-                                            // Brief pause, then fade out (total exactly 2 seconds: 770+200+245+420+365=2000ms)
+                                            // Brief pause, then fade out (total exactly 3 seconds: 1050+300+350+600+700=3000ms)
                                             setTimeout(() => {
                                                 loader.classList.add('fade-out');
                                                 loader.addEventListener('transitionend', () => {
@@ -303,14 +303,14 @@
                                                     document.body.style.overflow = 'auto';
                                                     initializeChartApp();
                                                 }, { once: true });
-                                            }, 365);
+                                            }, 700);
                                         }
                                     };
                                     typeGranted();
                                 }
                             };
                             backspace();
-                        }, 200);
+                        }, 300);
                     }
                 };
                 
