@@ -75,6 +75,10 @@
             text-align: center;
             color: #0f0;
             text-shadow: 0 0 10px #0f0, 0 0 20px #0f0;
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
         .loader-title {
             font-size: 2.5rem;
@@ -82,9 +86,14 @@
             animation: flicker 1.5s infinite alternate;
         }
         .loader-subtitle {
-            font-size: 1rem;
-            margin-top: 0.5rem;
+            font-size: clamp(4rem, 15vw, 12rem);
+            font-weight: bold;
+            letter-spacing: 0.15em;
+            margin: 0;
             animation: flicker 2s infinite alternate;
+            text-align: center;
+            width: 100%;
+            line-height: 1.2;
         }
         @keyframes flicker {
             0%, 18%, 22%, 25%, 53%, 57%, 100% {
@@ -251,7 +260,14 @@
                 // Type "Access Declined" - 14 characters in ~770ms (55ms per char)
                 const typeDeclined = () => {
                     if (step < text1.length) {
-                        typingEffect.textContent = text1.substring(0, step + 1);
+                        const currentText = text1.substring(0, step + 1);
+                        if (step < 7) {
+                            // "Access " - white
+                            typingEffect.innerHTML = `<span style="color: #ffffff;">${currentText}</span>`;
+                        } else {
+                            // "Access " (white) + "Declined" (red)
+                            typingEffect.innerHTML = `<span style="color: #ffffff;">Access </span><span style="color: #ef4444;">${currentText.substring(7)}</span>`;
+                        }
                         step++;
                         setTimeout(typeDeclined, 55);
                     } else {
@@ -261,14 +277,20 @@
                             const backspace = () => {
                                 if (step > 7) { // "Access " is 7 chars, so stop there
                                     step--;
-                                    typingEffect.textContent = text1.substring(0, step);
+                                    const currentText = text1.substring(0, step);
+                                    if (step <= 7) {
+                                        typingEffect.innerHTML = `<span style="color: #ffffff;">${currentText}</span>`;
+                                    } else {
+                                        typingEffect.innerHTML = `<span style="color: #ffffff;">Access </span><span style="color: #ef4444;">${currentText.substring(7)}</span>`;
+                                    }
                                     setTimeout(backspace, 35);
                                 } else {
                                     // Type "granted" - 7 chars in ~420ms (60ms per char)
                                     let grantedStep = 0;
                                     const typeGranted = () => {
                                         if (grantedStep < 7) {
-                                            typingEffect.textContent = "Access " + "granted".substring(0, grantedStep + 1);
+                                            const grantedText = "granted".substring(0, grantedStep + 1);
+                                            typingEffect.innerHTML = `<span style="color: #ffffff;">Access </span><span style="color: #10b981;">${grantedText}</span>`;
                                             grantedStep++;
                                             setTimeout(typeGranted, 60);
                                         } else {
