@@ -162,6 +162,28 @@
 
             gap: 2rem;
 
+            position: relative;
+
+            min-height: 100vh;
+
+        }
+
+        .loader-footer {
+
+            position: absolute;
+
+            bottom: 2rem;
+
+            font-size: 0.75rem;
+
+            color: #10b981;
+
+            opacity: 0.7;
+
+            text-align: center;
+
+            width: 100%;
+
         }
 
         .loader-title {
@@ -347,6 +369,8 @@
             <p id="typewriter-text" class="loader-subtitle"><span id="typing-effect"></span><span id="cursor">_</span></p>
 
             <div id="loading-spinner" class="loading-spinner hidden"></div>
+
+            <p class="loader-footer">Rochak Kadel 2025. All access granted</p>
 
         </div>
 
@@ -570,13 +594,19 @@
 
                 let currentMessage = techMessages[0];
 
-                const techJargonDuration = 3000; // 3 seconds total
+                const techJargonDuration = 5000; // 5 seconds total
 
                 const startTime = Date.now();
 
+                let cycleCount = 0; // Track which cycle we're on (0 = first, 1 = second)
+
+                let messagesShownInCycle = 0; // Track messages shown in current cycle
+
+                const messagesPerCycle = techMessages.length; // Show all messages in first cycle
+
                 
 
-                // Phase 1: Show technical jargon for ~3 seconds
+                // Phase 1: Show technical jargon for ~5 seconds
 
                 const showTechJargon = () => {
 
@@ -593,6 +623,36 @@
                     }
 
                     
+
+                    // Second cycle: quick switching without typewriter
+
+                    if (cycleCount >= 1) {
+
+                        const remainingTime = techJargonDuration - elapsed;
+
+                        const remainingMessages = techMessages.length;
+
+                        const timePerMessage = Math.max(80, remainingTime / remainingMessages);
+
+                        
+
+                        typingEffect.innerHTML = `<span style="color: #ffffff;">${currentMessage}</span>`;
+
+                        messageIndex = (messageIndex + 1) % techMessages.length;
+
+                        currentMessage = techMessages[messageIndex];
+
+                        messagesShownInCycle++;
+
+                        setTimeout(showTechJargon, timePerMessage);
+
+                        return;
+
+                    }
+
+                    
+
+                    // First cycle: typewriter effect
 
                     if (!isDeleting && charIndex < currentMessage.length) {
 
@@ -614,7 +674,7 @@
 
                             showTechJargon();
 
-                        }, 400);
+                        }, 300);
 
                     } else if (isDeleting && charIndex > 0) {
 
@@ -632,11 +692,39 @@
 
                         isDeleting = false;
 
-                        messageIndex = (messageIndex + 1) % techMessages.length;
+                        messagesShownInCycle++;
 
-                        currentMessage = techMessages[messageIndex];
+                        // If we've shown all messages, start second cycle (quick switching)
 
-                        setTimeout(showTechJargon, 100);
+                        if (messagesShownInCycle >= messagesPerCycle) {
+
+                            cycleCount = 1;
+
+                            messagesShownInCycle = 0;
+
+                            // Reset to first message for quick cycle
+
+                            messageIndex = 0;
+
+                            currentMessage = techMessages[0];
+
+                            charIndex = 0;
+
+                            // Immediately show first message of second cycle
+
+                            typingEffect.innerHTML = `<span style="color: #ffffff;">${currentMessage}</span>`;
+
+                            setTimeout(showTechJargon, 100);
+
+                        } else {
+
+                            messageIndex = (messageIndex + 1) % techMessages.length;
+
+                            currentMessage = techMessages[messageIndex];
+
+                            setTimeout(showTechJargon, 100);
+
+                        }
 
                     }
 
