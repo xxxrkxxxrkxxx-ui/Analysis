@@ -174,7 +174,7 @@
 
             bottom: 2rem;
 
-            font-size: 0.75rem;
+            font-size: 1rem;
 
             color: #10b981;
 
@@ -370,7 +370,7 @@
 
             <div id="loading-spinner" class="loading-spinner hidden"></div>
 
-            <p class="loader-footer">Rochak Kadel 2025. All access granted</p>
+            <p class="loader-footer">Rochak Kadel 2025, All rights reserved</p>
 
         </div>
 
@@ -566,165 +566,169 @@
 
             const startAnimation = () => {
 
-                // Technical jargon messages to cycle through
-
-                const techMessages = [
-
-                    "Checking authentication...",
-
-                    "Verifying credentials...",
-
-                    "Validating security tokens...",
-
-                    "Initializing secure connection...",
-
-                    "Scanning system integrity...",
-
-                    "Authenticating user session..."
-
-                ];
-
-                
-
-                let messageIndex = 0;
-
                 let charIndex = 0;
 
                 let isDeleting = false;
 
-                let currentMessage = techMessages[0];
-
-                const techJargonDuration = 5000; // 5 seconds total
-
-                const startTime = Date.now();
-
-                let cycleCount = 0; // Track which cycle we're on (0 = first, 1 = second)
-
-                let messagesShownInCycle = 0; // Track messages shown in current cycle
-
-                const messagesPerCycle = techMessages.length; // Show all messages in first cycle
+                let phase = 0; // 0: "Verifying authentication...", 1: backspace to "Verifying ", 2: type "credentials...", 3: backspace all, 4: type "Authenticating user session...", 5: loading, 6: access granted
 
                 
 
-                // Phase 1: Show technical jargon for ~5 seconds
+                const message1 = "Verifying authentication...";
 
-                const showTechJargon = () => {
+                const message2 = "Verifying credentials...";
 
-                    const elapsed = Date.now() - startTime;
+                const message3 = "Authenticating user session...";
 
-                    if (elapsed >= techJargonDuration) {
+                
 
-                        // Move to loading phase
+                // Phase 1: Type "Verifying authentication..."
 
-                        showLoading();
+                const typeMessage1 = () => {
 
-                        return;
+                    if (charIndex < message1.length) {
 
-                    }
-
-                    
-
-                    // Second cycle: quick switching without typewriter
-
-                    if (cycleCount >= 1) {
-
-                        const remainingTime = techJargonDuration - elapsed;
-
-                        const remainingMessages = techMessages.length;
-
-                        const timePerMessage = Math.max(80, remainingTime / remainingMessages);
-
-                        
-
-                        typingEffect.innerHTML = `<span style="color: #ffffff;">${currentMessage}</span>`;
-
-                        messageIndex = (messageIndex + 1) % techMessages.length;
-
-                        currentMessage = techMessages[messageIndex];
-
-                        messagesShownInCycle++;
-
-                        setTimeout(showTechJargon, timePerMessage);
-
-                        return;
-
-                    }
-
-                    
-
-                    // First cycle: typewriter effect
-
-                    if (!isDeleting && charIndex < currentMessage.length) {
-
-                        // Typing
-
-                        typingEffect.innerHTML = `<span style="color: #ffffff;">${currentMessage.substring(0, charIndex + 1)}</span>`;
+                        typingEffect.innerHTML = `<span style="color: #ffffff;">${message1.substring(0, charIndex + 1)}</span>`;
 
                         charIndex++;
 
-                        setTimeout(showTechJargon, 50);
+                        setTimeout(typeMessage1, 50);
 
-                    } else if (!isDeleting && charIndex === currentMessage.length) {
+                    } else {
 
-                        // Pause at end of message, then start deleting
+                        // Pause, then backspace "authentication"
 
                         setTimeout(() => {
 
                             isDeleting = true;
 
-                            showTechJargon();
+                            phase = 1;
 
-                        }, 300);
+                            backspaceAuthentication();
 
-                    } else if (isDeleting && charIndex > 0) {
+                        }, 400);
 
-                        // Deleting
+                    }
 
-                        typingEffect.innerHTML = `<span style="color: #ffffff;">${currentMessage.substring(0, charIndex - 1)}</span>`;
+                };
+
+                
+
+                // Backspace "authentication" from "Verifying authentication..."
+
+                const backspaceAuthentication = () => {
+
+                    if (charIndex > 10) { // "Verifying " is 10 characters
+
+                        typingEffect.innerHTML = `<span style="color: #ffffff;">${message1.substring(0, charIndex - 1)}</span>`;
 
                         charIndex--;
 
-                        setTimeout(showTechJargon, 30);
+                        setTimeout(backspaceAuthentication, 30);
 
                     } else {
 
-                        // Move to next message
+                        // Now type "credentials..."
 
                         isDeleting = false;
 
-                        messagesShownInCycle++;
+                        phase = 2;
 
-                        // If we've shown all messages, start second cycle (quick switching)
+                        charIndex = 10; // Start from "Verifying "
 
-                        if (messagesShownInCycle >= messagesPerCycle) {
+                        typeCredentials();
 
-                            cycleCount = 1;
+                    }
 
-                            messagesShownInCycle = 0;
+                };
 
-                            // Reset to first message for quick cycle
+                
 
-                            messageIndex = 0;
+                // Type "credentials..." after "Verifying "
 
-                            currentMessage = techMessages[0];
+                const typeCredentials = () => {
 
-                            charIndex = 0;
+                    if (charIndex < message2.length) {
 
-                            // Immediately show first message of second cycle
+                        typingEffect.innerHTML = `<span style="color: #ffffff;">${message2.substring(0, charIndex + 1)}</span>`;
 
-                            typingEffect.innerHTML = `<span style="color: #ffffff;">${currentMessage}</span>`;
+                        charIndex++;
 
-                            setTimeout(showTechJargon, 100);
+                        setTimeout(typeCredentials, 50);
 
-                        } else {
+                    } else {
 
-                            messageIndex = (messageIndex + 1) % techMessages.length;
+                        // Pause, then backspace everything
 
-                            currentMessage = techMessages[messageIndex];
+                        setTimeout(() => {
 
-                            setTimeout(showTechJargon, 100);
+                            isDeleting = true;
 
-                        }
+                            phase = 3;
+
+                            backspaceAll();
+
+                        }, 400);
+
+                    }
+
+                };
+
+                
+
+                // Backspace everything
+
+                const backspaceAll = () => {
+
+                    if (charIndex > 0) {
+
+                        typingEffect.innerHTML = `<span style="color: #ffffff;">${message2.substring(0, charIndex - 1)}</span>`;
+
+                        charIndex--;
+
+                        setTimeout(backspaceAll, 30);
+
+                    } else {
+
+                        // Now type "Authenticating user session..."
+
+                        isDeleting = false;
+
+                        phase = 4;
+
+                        charIndex = 0;
+
+                        typeMessage3();
+
+                    }
+
+                };
+
+                
+
+                // Type "Authenticating user session..."
+
+                const typeMessage3 = () => {
+
+                    if (charIndex < message3.length) {
+
+                        typingEffect.innerHTML = `<span style="color: #ffffff;">${message3.substring(0, charIndex + 1)}</span>`;
+
+                        charIndex++;
+
+                        setTimeout(typeMessage3, 50);
+
+                    } else {
+
+                        // Pause, then show loading
+
+                        setTimeout(() => {
+
+                            phase = 5;
+
+                            showLoading();
+
+                        }, 500);
 
                     }
 
@@ -848,7 +852,7 @@
 
                 // Start the animation
 
-                showTechJargon();
+                typeMessage1();
 
             };
 
