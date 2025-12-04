@@ -592,7 +592,7 @@
 
                         charIndex++;
 
-                        setTimeout(typeMessage1, 50);
+                        setTimeout(typeMessage1, 30);
 
                     } else {
 
@@ -606,7 +606,7 @@
 
                             backspaceAuthentication();
 
-                        }, 400);
+                        }, 200);
 
                     }
 
@@ -624,7 +624,7 @@
 
                         charIndex--;
 
-                        setTimeout(backspaceAuthentication, 30);
+                        setTimeout(backspaceAuthentication, 20);
 
                     } else {
 
@@ -654,7 +654,7 @@
 
                         charIndex++;
 
-                        setTimeout(typeCredentials, 50);
+                        setTimeout(typeCredentials, 30);
 
                     } else {
 
@@ -668,7 +668,7 @@
 
                             backspaceAll();
 
-                        }, 400);
+                        }, 200);
 
                     }
 
@@ -686,7 +686,7 @@
 
                         charIndex--;
 
-                        setTimeout(backspaceAll, 30);
+                        setTimeout(backspaceAll, 20);
 
                     } else {
 
@@ -716,7 +716,7 @@
 
                         charIndex++;
 
-                        setTimeout(typeMessage3, 50);
+                        setTimeout(typeMessage3, 30);
 
                     } else {
 
@@ -728,7 +728,7 @@
 
                             showLoading();
 
-                        }, 500);
+                        }, 300);
 
                     }
 
@@ -756,17 +756,17 @@
 
                             charIndex++;
 
-                            setTimeout(typeLoading, 100);
+                            setTimeout(typeLoading, 50);
 
                         } else {
 
-                            // Show loading for 1.5 seconds, then move to access granted
+                            // Show loading for 1 second, then move to access granted
 
                             setTimeout(() => {
 
                                 showAccessGranted();
 
-                            }, 1500);
+                            }, 1000);
 
                         }
 
@@ -814,7 +814,7 @@
 
                             charIndex++;
 
-                            setTimeout(typeGranted, 85);
+                            setTimeout(typeGranted, 50);
 
                         } else {
 
